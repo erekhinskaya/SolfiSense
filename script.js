@@ -25,31 +25,115 @@ const octaves = [2, 3, 4, 5]; // Adjusted to span from C2 to C5
 let generatedSequence = [];
 let selectedNotes = [];
 
+
+
 function generateSequence() {
+    const mode = document.getElementById("modeType").value;
     const sequenceLength = parseInt(document.getElementById("sequenceLength").value);
     const firstNote = document.getElementById("firstNote").value;
     const lastNote = document.getElementById("lastNote").value;
 
-    selectedNotes = getNotesInRange(firstNote, lastNote);
-    generatedSequence = [];
-    for (let i = 0; i < sequenceLength; i++) {
-        const randomNote = selectedNotes[Math.floor(Math.random() * selectedNotes.length)];
-        generatedSequence.push(randomNote);
+    if (mode === "random") {
+        selectedNotes = getNotesInRange(firstNote, lastNote);
+        generatedSequence = [];
+        for (let i = 0; i < sequenceLength; i++) {
+            const randomNote = selectedNotes[Math.floor(Math.random() * selectedNotes.length)];
+            generatedSequence.push(randomNote);
+        }
+    } else if (mode === "melody") {
+        const melody = predefinedMelodies[Math.floor(Math.random() * predefinedMelodies.length)];
+        console.log('selected melody: ', melody);
+        selectedNotes = getNotesInRange(firstNote, lastNote);
+
+        // Transpose the entire melody to fit within the range
+        generatedSequence = transposeMelodyToRange(melody, selectedNotes);
+
+        // Trim or pad the melody to match the sequence length
+        generatedSequence = generatedSequence.slice(0, sequenceLength);
+        while (generatedSequence.length < sequenceLength) {
+            generatedSequence.push(...generatedSequence.slice(0, sequenceLength - generatedSequence.length));
+        }
     }
+
+    console.log(generatedSequence);
     document.getElementById("result").innerText = "New sequence generated!";
 }
 
+/**
+ * Transposes an entire melody to fit within the given range of notes.
+ * @param {string[]} melody - The original melody (e.g., ["C4", "E4", "G4"]).
+ * @param {string[]} range - Array of notes in the desired range.
+ * @returns {string[]} - Transposed melody within the range.
+ */
+function transposeMelodyToRange(melody, range) {
+    if (!melody || melody.length === 0) {
+        throw new Error("Melody is empty or undefined.");
+    }
+    if (!range || range.length === 0) {
+        throw new Error("Range is empty or undefined.");
+    }
+
+    // Convert all notes to MIDI numbers for easy calculations
+    const melodyMidi = melody.map(noteToMidi);
+    const rangeMidi = range.map(noteToMidi);
+
+    const melodyMin = Math.min(...melodyMidi);
+    const melodyMax = Math.max(...melodyMidi);
+    const rangeMin = Math.min(...rangeMidi);
+    const rangeMax = Math.max(...rangeMidi);
+
+    // Calculate the transposition needed to fit within the range
+    let transposition = 0;
+    if (melodyMin < rangeMin) {
+        transposition = rangeMin - melodyMin; // Shift up
+    } else if (melodyMax > rangeMax) {
+        transposition = rangeMax - melodyMax; // Shift down
+    }
+
+    // Apply the transposition to the entire melody
+    return melodyMidi.map(midi => midiToNote(midi + transposition));
+}
+
+/**
+ * Converts a note (e.g., "C4") to its MIDI number.
+ * @param {string} note - The note to convert.
+ * @returns {number} - The MIDI number.
+ */
+function noteToMidi(note) {
+    const noteBase = note.slice(0, -1); // e.g., "C"
+    const noteOctave = parseInt(note.slice(-1)); // e.g., 4
+    const noteMap = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 };
+    return noteMap[noteBase] + (noteOctave + 1) * 12; // MIDI calculation
+}
+
+/**
+ * Converts a MIDI number to a note (e.g., 60 -> "C4").
+ * @param {number} midi - The MIDI number to convert.
+ * @returns {string} - The note name.
+ */
+function midiToNote(midi) {
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const noteBase = noteNames[midi % 12];
+    const noteOctave = Math.floor(midi / 12) - 1;
+    return `${noteBase}${noteOctave}`;
+}
+
+
 async function playSequence() {
+    const playSequenceButton = document.querySelector("button[onclick='playSequence()']");
     if (generatedSequence.length === 0) {
         generateSequence();
     }
-    for (const note of generatedSequence) {
-        try {
-            await playNoteSound(note);
-        } catch (error) {
-            console.error(error.message);
-        }
-    }
+
+    // Disable the "Play" button for the generated sequence
+    playSequenceButton.disabled = true;
+
+    // Play the generated sequence
+    await playMelody(generatedSequence);
+
+    // Re-enable the button after playback
+    playSequenceButton.disabled = false;
+
 }
 
 function playNoteSound(note) {
@@ -132,6 +216,48 @@ function setupPiano() {
 
         piano.appendChild(octaveDiv);
     });
+}
+
+function playUserInput() {
+    const userInput = document.getElementById("userInput").value.trim();
+    const playUserButton = document.querySelector("button[onclick='playUserInput()']");
+
+    if (!userInput) {
+        document.getElementById("result").innerText = "Please enter a melody!";
+        return;
+    }
+
+    const userNotes = userInput.split(" ").map(note => note.trim()); // Parse user input
+    console.log("User Input Notes:", userNotes);
+
+    // Validate the user input
+    const validNotes = userNotes.every(note => /^[A-G](#?)[0-8]$/.test(note)); // Regex for valid notes
+    if (!validNotes) {
+        document.getElementById("result").innerText = "Invalid notes in input!";
+        return;
+    }
+
+    // Disable the "Play" button for user input
+    playUserButton.disabled = true;
+
+    // Play the user-inputted melody
+    playMelody(userNotes).then(() => {
+        playUserButton.disabled = false; // Re-enable the button after playback
+    });
+}
+
+/**
+ * Plays a melody from an array of notes.
+ * @param {string[]} notes - Array of notes to play (e.g., ["C4", "E4", "G4"]).
+ */
+async function playMelody(notes) {
+    for (const note of notes) {
+        try {
+            await playNoteSound(note);
+        } catch (error) {
+            console.error("Error playing note:", note, error.message);
+        }
+    }
 }
 
 // Initialize the piano
