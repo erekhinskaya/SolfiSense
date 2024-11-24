@@ -1,0 +1,41 @@
+.piano {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+    margin-top: 20px;
+}
+
+.octave {
+    position: relative;
+    display: flex;
+}
+
+.white-key {
+    width: 40px;
+    height: 200px;
+    background-color: white;
+    border: 1px solid #333;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-size: 0.75em;
+    font-weight: bold;
+}
+
+.black-key {
+    width: 25px;
+    height: 120px;
+    background-color: black;
+    position: absolute;
+    top: 0;
+    margin-left: -3.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    color: white;
+    font-size: 0.7em;
+    z-index: 1;
+}
