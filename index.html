@@ -18,19 +18,27 @@
     <div class="controls mb-5 space-x-4">
         <label class="space-x-2">
             <span>Sequence Length:</span>
-            <input type="number" id="sequenceLength" value="5" min="1" class="border rounded p-1">
+            <input type="number" id="sequenceLength" style="width: 5ch;" value="5" min="1" class="border rounded p-1">
         </label>
         <label class="space-x-2">
             <span>First Note:</span>
-            <input type="text" id="firstNote" value="C2" class="border rounded p-1">
+            <input type="text" id="firstNote" style="width: 4ch;" value="C2" class="border rounded p-1">
         </label>
         <label class="space-x-2">
             <span>Last Note:</span>
-            <input type="text" id="lastNote" value="C5" class="border rounded p-1">
+            <input type="text" id="lastNote" style="width: 4ch;" value="C5" class="border rounded p-1">
         </label>
-        <button onclick="generateSequence()" class="bg-blue-500 text-white px-4 py-2 rounded">Generate Sequence</button>
-        <button onclick="playSequence()" class="bg-green-500 text-white px-4 py-2 rounded">Play Sequence</button>
+        <label class="space-x-2">
+            <span>Scale:</span>
+            <select id="scaleType" class="border rounded p-1">
+                <option value="major">Major</option>
+                <option value="minor">Minor</option>
+            </select>
+        </label>
+        <button onclick="generateSequence()" class="bg-blue-500 text-white px-4 py-2 rounded">Generate</button>
+        <button onclick="playSequence()" class="bg-green-500 text-white px-4 py-2 rounded">Play</button>
     </div>
+
 
     <div class="piano" id="pianoKeyboard"></div>
 

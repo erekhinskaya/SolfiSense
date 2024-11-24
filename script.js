@@ -82,8 +82,17 @@ function getNotesInRange(firstNote, lastNote) {
     const allNotes = [];
     let addNotes = false;
 
+    // Define major and minor scales
+    const scaleIntervals = {
+        major: ["C", "D", "E", "F", "G", "A", "B"],
+        minor: ["C", "D", "D#", "F", "G", "G#", "A#"],
+    };
+
+    // Get selected scale type
+    const scaleType = document.getElementById("scaleType").value;
+
     octaves.forEach(octave => {
-        for (const note of ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]) {
+        for (const note of scaleIntervals[scaleType]) {
             const fullNote = note + octave;
             if (fullNote === firstNote) addNotes = true;
             if (addNotes) allNotes.push(fullNote);
@@ -92,6 +101,7 @@ function getNotesInRange(firstNote, lastNote) {
     });
     return allNotes;
 }
+
 
 function setupPiano() {
     const piano = document.getElementById("pianoKeyboard");
