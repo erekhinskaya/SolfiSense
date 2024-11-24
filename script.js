@@ -1,9 +1,27 @@
-const octaves = [2, 3, 4, 5];  // Adjusted to span from C2 to C5
-const noteFrequencies = {
-    'C': 261.63, 'C#': 277.18, 'D': 293.66, 'D#': 311.13, 'E': 329.63,
-    'F': 349.23, 'F#': 369.99, 'G': 392.00, 'G#': 415.30, 'A': 440.00,
-    'A#': 466.16, 'B': 493.88
-};
+// Create a Tone.js Sampler for piano-like sounds
+let samplerLoaded = false;
+
+const pianoSampler = new Tone.Sampler({
+    urls: {
+        "C3": "C3.mp3",
+        "D#3": "Ds3.mp3",
+        "F#3": "Fs3.mp3",
+        "A3": "A3.mp3",
+        "C4": "C4.mp3",
+        "D#4": "Ds4.mp3",
+        "F#4": "Fs4.mp3",
+        "A4": "A4.mp3",
+        "C5": "C5.mp3",
+    },
+    release: 1, // Controls how long the note sustains
+    baseUrl: "https://tonejs.github.io/audio/salamander/",
+    onload: () => {
+        samplerLoaded = true;
+        console.log("Sampler loaded successfully.");
+    },
+}).toDestination();
+
+const octaves = [2, 3, 4, 5]; // Adjusted to span from C2 to C5
 let generatedSequence = [];
 let selectedNotes = [];
 
@@ -26,31 +44,34 @@ async function playSequence() {
         generateSequence();
     }
     for (const note of generatedSequence) {
-        await playNoteSound(note);
+        try {
+            await playNoteSound(note);
+        } catch (error) {
+            console.error(error.message);
+        }
     }
 }
 
 function playNoteSound(note) {
-    return new Promise((resolve) => {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.value = noteFrequencies[note.slice(0, -1)] * Math.pow(2, parseInt(note.slice(-1)) - 4);
-        oscillator.connect(audioCtx.destination);
-        oscillator.start();
-        setTimeout(() => {
-            oscillator.stop();
-            resolve();
-        }, 500);
+    return new Promise((resolve, reject) => {
+        if (samplerLoaded) {
+            pianoSampler.triggerAttackRelease(note, "500ms"); // Play note for 500ms
+            setTimeout(resolve, 500); // Resolve after the note plays
+        } else {
+            reject(new Error("Sampler is not loaded yet."));
+        }
     });
 }
 
 function checkSequence() {
     const userInput = document.getElementById("userInput").value.trim().split(" ");
-    const isCorrect = userInput.length === generatedSequence.length &&
+    const isCorrect =
+        userInput.length === generatedSequence.length &&
         userInput.every((note, i) => note === generatedSequence[i]);
 
-    document.getElementById("result").innerText = isCorrect ? "Correct! Generating new sequence..." : "Incorrect. Try again!";
+    document.getElementById("result").innerText = isCorrect
+        ? "Correct! Generating new sequence..."
+        : "Incorrect. Try again!";
 
     if (isCorrect) {
         setTimeout(generateSequence, 1000);
@@ -62,7 +83,7 @@ function getNotesInRange(firstNote, lastNote) {
     let addNotes = false;
 
     octaves.forEach(octave => {
-        for (const note in noteFrequencies) {
+        for (const note of ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]) {
             const fullNote = note + octave;
             if (fullNote === firstNote) addNotes = true;
             if (addNotes) allNotes.push(fullNote);
@@ -79,8 +100,8 @@ function setupPiano() {
         const octaveDiv = document.createElement("div");
         octaveDiv.className = "octave";
 
-        const whiteNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-        const blackNotes = { 'C': 'C#', 'D': 'D#', 'F': 'F#', 'G': 'G#', 'A': 'A#' };
+        const whiteNotes = ["C", "D", "E", "F", "G", "A", "B"];
+        const blackNotes = { C: "C#", D: "D#", F: "F#", G: "G#", A: "A#" };
 
         whiteNotes.forEach((note, index) => {
             const whiteKey = document.createElement("div");
@@ -92,7 +113,7 @@ function setupPiano() {
             if (blackNotes[note]) {
                 const blackKey = document.createElement("div");
                 blackKey.className = "black-key";
-                blackKey.style.left = `${(index * 40) + 30}px`; // Position black keys accurately
+                blackKey.style.left = `${index * 40 + 30}px`; // Position black keys accurately
                 blackKey.onclick = () => playNoteSound(blackNotes[note] + octave);
                 blackKey.innerText = blackNotes[note] + octave;
                 octaveDiv.appendChild(blackKey);
@@ -103,4 +124,5 @@ function setupPiano() {
     });
 }
 
+// Initialize the piano
 setupPiano();
