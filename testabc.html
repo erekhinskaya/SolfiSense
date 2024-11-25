@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ABCJS Example</title>
+    <!-- Include the full abcjs library for audio playback -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/abcjs/6.4.4/abcjs-basic-min.js"></script>
+
+
+    <style>
+        /* Optional: Add some basic styling */
+        #paper {
+            margin-bottom: 20px;
+        }
+
+        button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Element where the music will be rendered -->
+    <div id="paper"></div>
+    <!-- Element where the audio controls will appear -->
+    <div id="audio"></div>
+    <!-- Add a button to initiate playback -->
+    <button id="playButton">Play Music</button>
+
+    <script>
+        // ABC notation string
+        const abcString = `
+X:1
+T:Cooley's
+M:4/4
+L:1/8
+R:reel
+K:Emin
+|:D2|EBBA B2 EB|B2 AB dBAG|FDAD BDAD|FDAD dAFD|
+EBBA B2 EB|B2 AB defg|afe^c dBAF|DEFD E2:|
+|:gf|eB B2 efge|eB B2 gedB|A2 FA DAFA|A2 FA defg|
+eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|
+`;
+
+        // Render the ABC notation
+        const visualObj = ABCJS.renderAbc('paper', abcString);
+
+        // Initialize the synthesizer controller
+        const synthControl = new ABCJS.synth.SynthController();
+        synthControl.load('#audio', null, {
+            displayPlay: true,
+            displayProgress: true,
+            displayWarp: true
+        });
+
+        // Create the synth object
+        const synth = new ABCJS.synth.CreateSynth();
+
+        // Function to initialize and play the music
+        function playMusic() {
+            synth.init({ visualObj: visualObj[0] }).then(() => {
+                synthControl.setTune(visualObj[0], false, {
+                    chordsOff: true
+                }).then(() => {
+                    console.log('Audio successfully loaded.');
+                    synthControl.play();
+                }).catch(error => {
+                    console.warn('Audio problem:', error);
+                });
+            }).catch(error => {
+                console.warn('Synthesizer setup failed:', error);
+            });
+        }
+
+        // Add event listener to the play button
+        document.getElementById('playButton').addEventListener('click', () => {
+            // Ensure the synth object is properly initialized before accessing audioContext
+            if (synth.audioContext && synth.audioContext.state === 'suspended') {
+                synth.audioContext.resume().then(() => {
+                    playMusic();
+                });
+            } else {
+                playMusic();
+            }
+        });
+    </script>
+</body>
+
+</html>
